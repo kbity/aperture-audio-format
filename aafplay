@@ -41,6 +41,10 @@ def main():
         print("""Usage: aafplay <input_file [AAF]>""")
         sys.exit()
     input_path = sys.argv[1]
+    args = sys.argv[2:]
+    loop = False
+    if "--loop" in args:
+        loop = True
 
     aud = open(input_path)
     text = aud.read()
@@ -65,6 +69,8 @@ def main():
     print(f"Now Playing - {input_path}")
     audio = AudioSegment.from_raw(io.BytesIO(b), sample_width=2, frame_rate=hz, channels=channels)
     playback.play(audio)
+    while loop:
+        playback.play(audio)
 
 
 if __name__ == "__main__":
