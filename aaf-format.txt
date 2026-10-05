@@ -1,0 +1,60 @@
+Aperture Audio Format (c) 1986 Aperture Science
+
+This document describes the usage of the aaf file format (.aaf/.aaff).
+The AAF Format uses non-linear quantization, similar to A-Law and U-Law. AAF supports 2 sample sizes, 8-bit ASCII (1 character), and 16-bit ASCII (2 characters).
+
+The encoder expects Raw Signed 16-bit PCM.
+
+-- File Format --
+The AAF Format stores audio in a fixed-format file, the structure of which is as follows:
+================================
+APERTURE AUDIO FORMAT (c) 1986<lf>
+<frequency>,<channels>,<mode>,<file description><lf>
+<samples>
+================================
+Frequency is measured in hz, so 16000 stores 16000 hz data.
+Channels is how many channels the audio has, 1 is used for mono and 2 is for stereo.
+Mode selects whether the samples are 8-bit ASCII or 16-bit ASCII, with s being 8-bit and d being 16-bit. (Single/Double)
+File Description is unparsed Metadata, such as a name for a sample, or title of a recording.
+
+After the magic string and after the header, linefeeds should follow.
+Optionally an additional carriage return can be included for support for standard DOS utilities.
+
+The samples are the raw data, with data being encoded in order of channel number, channel 0 is the first in the pair, then channel 1, if the file is stereo. Support for more channels is possible but currently unused.
+
+The file description field is optional but recommended.
+
+Samples are big-endian.
+
+-- Quantization Mapping --
+2-Character AAF has a range of 16 bits, which has low levels of quantization. AAF applies non-linear quantization internally, leading to higher but still relatively low quantization levels.
+-32768/-32767 - 0
+1622 intervals of +11 / -14925 - 1622
+1024 intervals of +8 / -6733 - 2646
+767 intervals of +6 / -2131 - 3413
+516 intervals of +3 / -583 - 3929
+583 intervals of +1 / -1 - 4511
+0 - 4512
+583 intervals of +1 / 583 - 5096
+516 intervals of +3 / 2131 - 5612
+767 intervals of +6 / 6733 - 6379
+1024 intervals of +8 / 14925 - 7403
+1622 intervals of +11 / 32767 - 9024
+
+1-Character AAF has a range of 10 bits, which has a high level of quantization already, and AAF applies even further quantization, leading to lower bitrates but also lower quality.
+-512/-511 - 0
+16 intervals of +16
+12 intervals of +12
+9 intervals of +9
+5 intervals of +4
+5 intervals of +2
+0 - 47
+5 intervals of +2
+5 intervals of +4
+9 intervals of +9
+12 intervals of +12
+16 intervals of +16
+511 - 94
+
+These quantization schemes are known as R-Law-Big (2-Character Encoding) and R-Law-Little (1-Character Encoding)
+They're named after Aperture Science Programmer Doug Rattmann

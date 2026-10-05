@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+import sys, io
+from pydub import playback, AudioSegment
+
+def dgtab():
+    half = [11] * 1622 + [8] * 1024 + [6] * 767 + [3] * 516 + [1] * 583
+    steps = half + half[::-1]
+    mapping = [-32767,]
+    h = -32767
+    for m, s in enumerate(steps, 1):
+        h += s
+        mapping.append(h)
+    return mapping
+
+def sgtab():
+    half = [16] * 16 + [12] * 12 + [9] * 9 + [4] * 5 + [2] * 5
+    steps = half + half[::-1]
+    mapping = [-511,]
+    h = -511
+    for m, s in enumerate(steps, 1):
+        h += s
+        mapping.append(h)
+    return mapping
+
+mapping = dgtab()
+smapping = sgtab()
+
+def duquant(samp: str):
+    o0 = ord(samp[0])-32
+    o1 = ord(samp[1])-32
+    val = (o0*95)+o1
+    return mapping[val]
+
+def suquant(samp: str):
+    val = ord(samp)-32
+    return smapping[val]
+
+def main():
+    print(f"Aperture Audio Format Player v0.8.4 (c) 1996")
+    if len(sys.argv) < 2:
+        print("""Usage: aafplay <input_file [AAF]>""")
+        sys.exit()
+    input_path = sys.argv[1]
+
+    aud = open(input_path)
+    text = aud.read()
+    split = text.splitlines()
+    pcmdata = split[2]
+    if not split[0] == "APERTURE AUDIO FORMAT (c) 1986":
+        raise Exception("Invalid/Unsupported Aperture Audio File!")
+    header = split[1].split(",")
+    if len(header) == 4:
+        print("Saved Comment:", header[3])
+    hz, channels, mode = int(header[0]), int(header[1]), header[2]
+
+    b = bytearray()
+    if mode == "d":
+        for ch in range(0, len(pcmdata), 2):
+            t = pcmdata[ch]+pcmdata[ch+1]
+            b.extend(duquant(t).to_bytes(2, 'little', signed=True))
+    else:
+        for ch in pcmdata:
+            b.extend((suquant(ch)*64).to_bytes(2, 'little', signed=True))
+
+    print(f"Now Playing - {input_path}")
+    audio = AudioSegment.from_raw(io.BytesIO(b), sample_width=2, frame_rate=hz, channels=channels)
+    playback.play(audio)
+
+
+if __name__ == "__main__":
+    main()
